@@ -172,8 +172,8 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   uLines.forEach(l => { ctx.fillText(l, CX, uy); uy += 50; });
 
   // Herz-Trenner unter Untertitel
-  ctx.font='30px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
-  ctx.fillText('♥', CX, uy + 26);
+  ctx.font='30px Georgia,"Times New Roman",serif';
+  ctx.fillText('♥︎', CX, uy + 26);
 
   // Menü-Bereich
   const yTop = uy + 70;
@@ -186,16 +186,16 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
     ctx.lineWidth=3; ctx.strokeStyle=GRUEN;
     ctx.beginPath(); ctx.arc(cx, cy, 27, 0, Math.PI*2); ctx.stroke();
     ctx.fillStyle=GRUEN; ctx.textAlign='center';
-    ctx.font='30px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
-    ctx.fillText('♥', cx, cy+10);
+    ctx.font='30px Georgia,"Times New Roman",serif';
+    ctx.fillText('♥︎', cx, cy+10);
     ctx.restore();
   }
   function divider(y){
     ctx.save(); ctx.strokeStyle=GRUEN; ctx.lineWidth=2; ctx.fillStyle=GRUEN;
     ctx.beginPath(); ctx.moveTo(CX-82, y); ctx.lineTo(CX-24, y); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(CX+24, y); ctx.lineTo(CX+82, y); ctx.stroke();
-    ctx.textAlign='center'; ctx.font='22px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
-    ctx.fillText('♥', CX, y+7);
+    ctx.textAlign='center'; ctx.font='22px Georgia,"Times New Roman",serif';
+    ctx.fillText('♥︎', CX, y+7);
     ctx.restore();
   }
 
@@ -219,8 +219,8 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   ctx.textAlign='center'; ctx.fillStyle=GRUEN; ctx.font='600 40px "Dancing Script", cursive';
   let gy = 1200;
   gLines.forEach(l => { ctx.fillText(l, CX, gy); gy += 52; });
-  ctx.font='26px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
-  ctx.fillText('♥', CX, gy + 8);
+  ctx.font='26px Georgia,"Times New Roman",serif';
+  ctx.fillText('♥︎', CX, gy + 8);
 
   return cv;
 }

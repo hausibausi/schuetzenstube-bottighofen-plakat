@@ -154,39 +154,88 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
   const ctx=cv.getContext('2d');
   ctx.drawImage(bgImg,0,0,W,H);
-  ctx.fillStyle=GRUEN;
-  const CX=322, LX=70, RX=596;   // linke Textspalte
 
-  // Titel (fix, zweizeilig) – reiner Text
-  ctx.textAlign='center';
-  ctx.font='700 104px "Dancing Script", cursive';
-  ctx.fillText('Wuchäend-', CX, 168);
-  ctx.fillText('Menü', CX, 272);
+  const LX=64, RX=590;           // harte linke Textspalte (rechts NICHT ins Bild)
+  const CX=(LX+RX)/2;
+  const COLW=RX-LX;
+  const DANCING='"Dancing Script", cursive';
+  const SERIF='"Playfair Display", serif';
 
-  // Untertitel
-  const uLines=untertitel.split('\n').map(s=>s.trim()).filter(Boolean);
-  ctx.font='500 40px "Playfair Display", serif';
-  let uy=352; uLines.forEach(l=>{ ctx.fillText(l, CX, uy); uy+=50; });
-
-  // Menü – nur Text, linksbündig, vertikal verteilt (keine Grafik)
-  const yTop=uy+55, yBottom=1120;
-  const n=Math.max(1, gerichte.length);
-  const slot=(yBottom-yTop)/n;
-  const lineH=64, textLX=95, textMaxW=RX-textLX;
-  ctx.textAlign='left';
-  ctx.font='700 60px "Dancing Script", cursive';
-  for(let i=0;i<n;i++){
-    const cy=yTop+slot*(i+0.5);
-    const lines=wrap(ctx, gerichte[i]||'', textMaxW);
-    const total=lines.length*lineH;
-    let by=cy-total/2+lineH*0.78;
-    lines.forEach(l=>{ ctx.fillText(l, textLX, by); by+=lineH; });
+  // Schriftgröße so verkleinern, dass Text in maxW passt (einzeilig)
+  function fit(text,maxW,weight,startPx,fam,minPx){
+    let px=startPx;
+    while(px>minPx){ ctx.font=weight+' '+px+'px '+fam; if(ctx.measureText(text).width<=maxW) break; px-=2; }
+    ctx.font=weight+' '+px+'px '+fam; return px;
+  }
+  // Umbrechen; falls ein Wort zu breit ist, Schrift verkleinern
+  function wrapFit(text,maxW,weight,startPx,fam,minPx){
+    let px=startPx, lines;
+    while(px>=minPx){ ctx.font=weight+' '+px+'px '+fam; lines=wrap(ctx,text,maxW);
+      if(lines.every(l=>ctx.measureText(l).width<=maxW)) break; px-=2; }
+    return {px,lines};
+  }
+  function herz(x,y,size){
+    ctx.save(); ctx.translate(x,y); ctx.scale(size/16,size/16);
+    ctx.beginPath(); ctx.moveTo(0,4);
+    ctx.bezierCurveTo(-8,-4,-6,-11,0,-6);
+    ctx.bezierCurveTo(6,-11,8,-4,0,4);
+    ctx.closePath(); ctx.fillStyle=GRUEN; ctx.fill(); ctx.restore();
+  }
+  function bullet(cx,cy){
+    ctx.save(); ctx.lineWidth=3; ctx.strokeStyle=GRUEN;
+    ctx.beginPath(); ctx.arc(cx,cy,26,0,Math.PI*2); ctx.stroke(); ctx.restore();
+    herz(cx,cy,20);
+  }
+  function pfeil(x,y,dir){ ctx.save(); ctx.strokeStyle=GRUEN; ctx.lineWidth=2; ctx.beginPath();
+    ctx.moveTo(x,y-4); ctx.lineTo(x+dir*6,y); ctx.lineTo(x,y+4); ctx.stroke(); ctx.restore(); }
+  function divider(y){
+    ctx.save(); ctx.strokeStyle=GRUEN; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(CX-88,y); ctx.lineTo(CX-30,y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CX+30,y); ctx.lineTo(CX+88,y); ctx.stroke(); ctx.restore();
+    pfeil(CX-24,y,1); pfeil(CX+24,y,-1); herz(CX,y,15);
   }
 
-  // Grussformel unten – reiner Text
+  ctx.fillStyle=GRUEN; ctx.textAlign='center';
+
+  // Titel (fix, zweizeilig) – passt sich der Spaltenbreite an
+  const tPx=fit('Wuchäend-', COLW, '700', 104, DANCING, 54);
+  let y = 70 + tPx*0.85;
+  ctx.font='700 '+tPx+'px '+DANCING;
+  ctx.fillText('Wuchäend-', CX, y);
+  y += tPx*1.02;
+  ctx.fillText('Menü', CX, y);
+
+  // Untertitel (jede Zeile passend verkleinert)
+  y += 58;
+  const uLines=untertitel.split('\n').map(s=>s.trim()).filter(Boolean);
+  uLines.forEach(l=>{ const px=fit(l, COLW, '500', 40, SERIF, 22); ctx.fillText(l, CX, y); y+=px+12; });
+
+  // kleiner grüner Herz-Trenner
+  y += 6; herz(CX, y, 18); y += 34;
+
+  // Menü: Bullet + umbrechender Text + Trenner
+  const yTop=y, yBottom=1120;
+  const n=Math.max(1, gerichte.length);
+  const slot=(yBottom-yTop)/n;
+  const textLX=150, menuMaxW=RX-textLX;
+  for(let i=0;i<n;i++){
+    const cy=yTop+slot*(i+0.5);
+    bullet(105, cy);
+    const {px,lines}=wrapFit(gerichte[i]||'', menuMaxW, '700', 58, DANCING, 30);
+    const lh=px*1.05, total=lines.length*lh;
+    ctx.fillStyle=GRUEN; ctx.textAlign='left'; ctx.font='700 '+px+'px '+DANCING;
+    let by=cy-total/2+lh*0.78;
+    lines.forEach(l=>{ ctx.fillText(l, textLX, by); by+=lh; });
+    ctx.textAlign='center';
+    if(i<n-1) divider(yTop+slot*(i+1));
+  }
+
+  // Grussformel unten (passend verkleinert)
+  let gy=1200;
   const gLines=gruss.split('\n').map(s=>s.trim()).filter(Boolean);
-  ctx.textAlign='center'; ctx.font='600 40px "Dancing Script", cursive';
-  let gy=1205; gLines.forEach(l=>{ ctx.fillText(l, CX, gy); gy+=52; });
+  ctx.fillStyle=GRUEN; ctx.textAlign='center';
+  gLines.forEach(l=>{ const px=fit(l, COLW, '600', 40, DANCING, 22); ctx.fillText(l, CX, gy); gy+=px+12; });
+  herz(CX, gy+2, 16);
 
   return cv;
 }

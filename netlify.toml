@@ -1,0 +1,12 @@
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/plakat"
+  to = "/.netlify/functions/plakat"
+  status = 200
+  force = true

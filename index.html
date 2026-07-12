@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2f5d34">
+<title>Schützenstube Bottighofen · Plakatgenerator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gruen:#2f5d34; --gruen-tief:#264a2a; --gruen-hell:#e8f0e6; --gruen-linie:#3c7042;
+    --creme:#f6efdd; --papier:#fffdf6; --rot:#c0392b;
+    --rand:#d9cfa9; --rand-weich:#e7dcbc; --text:#3a3a30; --grau:#8a8577;
+    --schatten:0 8px 24px rgba(47,93,52,.10);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; font-family:"Nunito Sans",-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text); line-height:1.55; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    background:
+      radial-gradient(1200px 500px at 50% -200px, #fbf6e8 0%, transparent 60%),
+      linear-gradient(180deg, #f6efdd 0%, #f1e8cf 100%);
+    min-height:100vh;
+  }
+  header{
+    position:relative; text-align:center; color:#fff;
+    background:
+      radial-gradient(600px 300px at 80% -60px, rgba(255,255,255,.08), transparent 70%),
+      linear-gradient(160deg, var(--gruen) 0%, var(--gruen-tief) 100%);
+    padding:calc(26px + env(safe-area-inset-top)) 20px 30px;
+    border-bottom:4px solid #d8c98a;
+    box-shadow:0 4px 18px rgba(38,74,42,.28);
+  }
+  .brand{font-size:13px; letter-spacing:3px; text-transform:uppercase; font-weight:700; opacity:.9; margin-bottom:2px;}
+  .titel{font-family:"Dancing Script",cursive; font-weight:700; font-size:44px; line-height:1; margin:2px 0 4px; color:#fdfaf0; text-shadow:0 2px 6px rgba(0,0,0,.25);}
+  .sub{font-size:13.5px; letter-spacing:2px; text-transform:uppercase; opacity:.88}
+  .herz{color:#ff5c5c; font-size:18px; vertical-align:middle; filter:drop-shadow(0 1px 1px rgba(0,0,0,.2))}
+  .zierlinie{width:120px; height:1px; margin:10px auto 0; background:linear-gradient(90deg, transparent, #dcd0a0, transparent);}
+  .wrap{max-width:660px; margin:0 auto; padding:20px 15px calc(60px + env(safe-area-inset-bottom))}
+  .karte{position:relative; background:var(--papier); border:1px solid var(--rand-weich); border-radius:18px; padding:20px; margin:16px 0; box-shadow:var(--schatten);}
+  .karte h2{font-size:17px; margin:0 0 14px; display:flex; align-items:center; color:var(--gruen-tief);}
+  .schritt{display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; font-weight:700; font-size:15px; margin-right:10px; box-shadow:0 2px 6px rgba(47,93,52,.35);}
+  label{display:block; font-weight:700; font-size:14.5px; margin:12px 0 5px; color:var(--gruen-tief)}
+  textarea{width:100%; padding:13px 14px; border:1.5px solid var(--rand); border-radius:12px; font-size:16px; font-family:inherit; background:#fffef9; color:var(--text); transition:border-color .15s, box-shadow .15s; resize:none; overflow:hidden; min-height:48px;}
+  textarea:focus{outline:none; border-color:var(--gruen-linie); box-shadow:0 0 0 3px rgba(60,112,66,.15);}
+  textarea[readonly]{background:#f3eeddcc; color:#5a5747; border-style:dashed; cursor:default;}
+  textarea[readonly]:focus{border-color:var(--rand); box-shadow:none;}
+  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px}
+  .zeile textarea{flex:1}
+  .btn{border:none; border-radius:13px; padding:14px 18px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; transition:transform .05s, background .15s;}
+  .btn:active{transform:translateY(1px)}
+  .btn-gruen{background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; box-shadow:0 4px 12px rgba(47,93,52,.3)}
+  .btn-klein{background:var(--gruen-hell); color:var(--gruen-tief); padding:12px 14px; font-size:15px; width:100%; border:1px dashed #b9cdb6}
+  .btn-weg{background:#f6e4e1; color:var(--rot); width:52px; min-height:48px; padding:0; font-size:22px; flex:0 0 auto}
+  .btn-gross{width:100%; font-size:18px; padding:18px}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  #vorschau-bereich{text-align:center}
+  #vorschau{max-width:100%; border-radius:14px; border:1px solid var(--rand); margin-top:6px; display:none; box-shadow:var(--schatten)}
+  #status{margin:14px 0 0; font-size:15px; min-height:22px}
+  .lade{color:var(--gruen-tief); font-weight:700}
+  .fehler{color:var(--rot); font-weight:700; white-space:pre-wrap; text-align:left}
+  .spinner{display:inline-block; width:16px; height:16px; border:3px solid var(--gruen-hell); border-top-color:var(--gruen); border-radius:50%; animation:dreh .8s linear infinite; vertical-align:-3px; margin-right:8px;}
+  @keyframes dreh{to{transform:rotate(360deg)}}
+  .fuss{text-align:center; font-size:13px; color:var(--grau); margin-top:14px}
+  .fuss .herz{font-size:13px}
+  @media (max-width:480px){ .titel{font-size:38px} .karte{padding:16px; border-radius:15px; margin:13px 0} .karte h2{font-size:16px} .brand{letter-spacing:2px} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Schützenstube Bottighofen</div>
+  <h1 class="titel">Wuchäend-Menü <span class="herz">&#9829;</span></h1>
+  <div class="sub">Plakatgenerator</div>
+  <div class="zierlinie"></div>
+</header>
+
+<div class="wrap">
+  <div class="karte">
+    <h2><span class="schritt">1</span>Menü für dieses Wochenende</h2>
+
+    <label>Untertitel (Ort/Lokal)</label>
+    <textarea id="untertitel" readonly>i dä Schützenstube
+Liebburgtobel Bottighofen</textarea>
+
+    <label>Gerichte (ein Gericht je Zeile)</label>
+    <div id="gerichte"></div>
+    <button class="btn btn-klein" id="add-gericht">+ Gericht hinzufügen</button>
+
+    <label style="margin-top:16px">Grussformel unten</label>
+    <textarea id="gruss" readonly>Freu mi uf euäs Bsüächli
+Grüässli Brigitte</textarea>
+  </div>
+
+  <div class="karte">
+    <h2><span class="schritt">2</span>Plakat erstellen</h2>
+    <button class="btn btn-gruen btn-gross" id="erstellen">✨ Plakat erstellen</button>
+    <div id="status"></div>
+    <div id="vorschau-bereich">
+      <img id="vorschau" alt="Plakat-Vorschau">
+      <div id="download-bereich" style="margin-top:12px; display:none">
+        <button class="btn btn-gruen btn-gross" id="download">⬇️ Speichern / Teilen</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="fuss">Läuft über OpenAI · Bilder werden sicher serverseitig erzeugt <span class="herz">&#9829;</span></p>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+function autoGrow(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
+document.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') autoGrow(e.target); });
+
+const gerichteBox = $('#gerichte');
+function neueZeile(wert=''){
+  const div = document.createElement('div');
+  div.className = 'zeile';
+  const ta = document.createElement('textarea');
+  ta.rows = 1; ta.value = wert; ta.placeholder = 'z. B. Roastbeef';
+  const weg = document.createElement('button');
+  weg.className = 'btn btn-weg'; weg.textContent = '×';
+  weg.onclick = () => div.remove();
+  div.append(ta, weg);
+  gerichteBox.append(div);
+  autoGrow(ta);
+}
+['Suppe','Salat','Roastbeef','Sauce tartare & Sauce Hollandaise'].forEach(neueZeile);
+$('#add-gericht').addEventListener('click', () => neueZeile());
+
+let letztesBild = null;
+function dateiName(){
+  const d = new Date();
+  const datum = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `Wuchaeend-Menue_${datum}.png`;
+}
+
+async function erstellePlakat(){
+  const status = $('#status');
+  const vorschau = $('#vorschau');
+  const dlBereich = $('#download-bereich');
+  const gerichte = [...gerichteBox.querySelectorAll('textarea')].map(t=>t.value.trim()).filter(Boolean);
+  if (!gerichte.length){ status.innerHTML = '<span class="fehler">Bitte mindestens ein Gericht eingeben.</span>'; return; }
+
+  $('#erstellen').disabled = true;
+  dlBereich.style.display = 'none'; vorschau.style.display = 'none';
+  status.innerHTML = '<span class="lade"><span class="spinner"></span>Plakat wird erstellt … das dauert etwa 20–60 Sekunden.</span>';
+
+  try {
+    const res = await fetch('/api/plakat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ untertitel: $('#untertitel').value, gruss: $('#gruss').value, gerichte })
+    });
+    const daten = await res.json();
+    if (daten.error) throw new Error(daten.error);
+    if (!daten.image) throw new Error('Kein Bild erhalten.');
+    letztesBild = daten.image;
+    vorschau.src = letztesBild; vorschau.style.display = 'block';
+    dlBereich.style.display = 'block';
+    status.innerHTML = '<span class="lade">✅ Fertig! Wenn der Text mal nicht stimmt: einfach nochmal „Plakat erstellen" drücken.</span>';
+  } catch (e){
+    let tipp = '';
+    if (/quota|billing|insufficient|exceeded/i.test(e.message)) tipp = '\n\nTipp: OpenAI-Guthaben prüfen.';
+    else if (/timeout|timed out|504|502/i.test(e.message)) tipp = '\n\nTipp: Es hat zu lange gedauert – bitte nochmal versuchen.';
+    status.innerHTML = '<span class="fehler">Fehler: ' + e.message + tipp + '</span>';
+  } finally {
+    $('#erstellen').disabled = false;
+  }
+}
+
+$('#erstellen').addEventListener('click', erstellePlakat);
+
+// Speichern/Teilen: auf Handy natives Menue (In Fotos/Galerie sichern), sonst Download
+$('#download').addEventListener('click', async () => {
+  if (!letztesBild) return;
+  const name = dateiName();
+  try {
+    const blob = await (await fetch(letztesBild)).blob();
+    const file = new File([blob], name, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Wuchäend-Menü' });
+      return;
+    }
+  } catch (e) { /* Nutzer-Abbruch oder nicht unterstuetzt -> Fallback */ }
+  const a = document.createElement('a');
+  a.href = letztesBild; a.download = name; a.click();
+});
+
+document.querySelectorAll('textarea').forEach(autoGrow);
+</script>
+</body>
+</html>

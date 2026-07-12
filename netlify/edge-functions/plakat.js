@@ -33,6 +33,7 @@ ${gruss}
 
 WICHTIG:
 - Schreibe ALLE Texte exakt Zeichen für Zeichen wie oben angegeben, inklusive Schweizerdeutscher Schreibweise und Umlaute. Keine Wörter erfinden, weglassen oder verändern.
+- Umlaute ä, ö, ü und ß unbedingt korrekt mit ihren Pünktchen schreiben, niemals durch a, o, u oder ss ersetzen. Prüfe jeden Umlaut Buchstabe für Buchstabe.
 - Gleiches Hochformat (Seitenverhältnis) wie das Referenzbild.
 - Sauberes, professionelles, druckfertiges Layout.`;
 }

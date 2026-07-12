@@ -1,0 +1,1 @@
+# schuetzenstube-plakat

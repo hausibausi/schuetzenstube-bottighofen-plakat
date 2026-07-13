@@ -47,8 +47,12 @@
   textarea:focus{outline:none; border-color:var(--gruen-linie); box-shadow:0 0 0 3px rgba(60,112,66,.15);}
   textarea[readonly]{background:#f3eeddcc; color:#5a5747; border-style:dashed; cursor:default;}
   textarea[readonly]:focus{border-color:var(--rand); box-shadow:none;}
-  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px}
+  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px;}
   .zeile textarea{flex:1}
+  .zeile.zieht{opacity:.9; background:#fffef9; box-shadow:0 10px 22px rgba(47,93,52,.22); position:relative; z-index:5;}
+  .zeile.platz{opacity:.35}
+  .griff{flex:0 0 auto; width:44px; min-height:48px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:var(--gruen-tief); background:var(--gruen-hell); border:1px dashed #b9cdb6; border-radius:13px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
+  .griff:active{cursor:grabbing}
   .btn{border:none; border-radius:13px; padding:14px 18px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; transition:transform .05s, background .15s;}
   .btn:active{transform:translateY(1px)}
   .btn-gruen{background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; box-shadow:0 4px 12px rgba(47,93,52,.3)}
@@ -104,8 +108,6 @@ Grüässli Brigitte</textarea>
       </div>
     </div>
   </div>
-
-  <p class="fuss">Text wird scharf eingesetzt · Bild-Hintergrund von OpenAI <span class="herz">&#9829;</span></p>
 </div>
 
 <script>
@@ -118,14 +120,53 @@ const gerichteBox = $('#gerichte');
 function neueZeile(wert=''){
   const div = document.createElement('div');
   div.className = 'zeile';
+  const griff = document.createElement('div');
+  griff.className = 'griff'; griff.textContent = '⠇';
+  griff.setAttribute('aria-label','Gedrückt halten und verschieben');
+  griff.setAttribute('title','Gedrückt halten und verschieben');
   const ta = document.createElement('textarea');
   ta.rows = 1; ta.value = wert; ta.placeholder = 'z. B. Roastbeef';
   const weg = document.createElement('button');
   weg.className = 'btn btn-weg'; weg.textContent = '×';
   weg.onclick = () => div.remove();
-  div.append(ta, weg);
+  div.append(griff, ta, weg);
   gerichteBox.append(div);
   autoGrow(ta);
+  ziehbar(griff, div);
+}
+
+// Reihenfolge per Griff verschieben – funktioniert mit Maus UND Touch (Android/iOS)
+function nachbarNach(y){
+  const zeilen = [...gerichteBox.querySelectorAll('.zeile:not(.zieht)')];
+  let treffer = null, naehe = -Infinity;
+  for (const z of zeilen){
+    const box = z.getBoundingClientRect();
+    const abstand = y - (box.top + box.height/2);
+    if (abstand < 0 && abstand > naehe){ naehe = abstand; treffer = z; }
+  }
+  return treffer;
+}
+function ziehbar(griff, zeile){
+  griff.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    griff.setPointerCapture(e.pointerId);
+    zeile.classList.add('zieht');
+    const move = ev => {
+      const nach = nachbarNach(ev.clientY);
+      if (nach == null) gerichteBox.appendChild(zeile);
+      else gerichteBox.insertBefore(zeile, nach);
+    };
+    const ende = () => {
+      zeile.classList.remove('zieht');
+      try { griff.releasePointerCapture(e.pointerId); } catch(_){}
+      griff.removeEventListener('pointermove', move);
+      griff.removeEventListener('pointerup', ende);
+      griff.removeEventListener('pointercancel', ende);
+    };
+    griff.addEventListener('pointermove', move);
+    griff.addEventListener('pointerup', ende);
+    griff.addEventListener('pointercancel', ende);
+  });
 }
 ['Suppe','Salat','Roastbeef','Sauce tartare & Sauce Hollandaise'].forEach(neueZeile);
 $('#add-gericht').addEventListener('click', () => neueZeile());
@@ -155,19 +196,17 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   const ctx=cv.getContext('2d');
   ctx.drawImage(bgImg,0,0,W,H);
 
-  const LX=64, RX=590;           // harte linke Textspalte (rechts NICHT ins Bild)
-  const CX=(LX+RX)/2;
+  const LX=64, RX=545;           // engere Spalte, Sicherheitsabstand zu den Fotos
+  const CX=Math.round((LX+RX)/2);
   const COLW=RX-LX;
   const DANCING='"Dancing Script", cursive';
   const SERIF='"Playfair Display", serif';
 
-  // Schriftgröße so verkleinern, dass Text in maxW passt (einzeilig)
   function fit(text,maxW,weight,startPx,fam,minPx){
     let px=startPx;
     while(px>minPx){ ctx.font=weight+' '+px+'px '+fam; if(ctx.measureText(text).width<=maxW) break; px-=2; }
     ctx.font=weight+' '+px+'px '+fam; return px;
   }
-  // Umbrechen; falls ein Wort zu breit ist, Schrift verkleinern
   function wrapFit(text,maxW,weight,startPx,fam,minPx){
     let px=startPx, lines;
     while(px>=minPx){ ctx.font=weight+' '+px+'px '+fam; lines=wrap(ctx,text,maxW);
@@ -175,53 +214,61 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
     return {px,lines};
   }
   function herz(x,y,size){
-    ctx.save(); ctx.translate(x,y); ctx.scale(size/16,size/16);
+    ctx.save(); ctx.translate(x,y); ctx.scale(size/16,size/16); ctx.translate(0,2.5);
     ctx.beginPath(); ctx.moveTo(0,4);
     ctx.bezierCurveTo(-8,-4,-6,-11,0,-6);
     ctx.bezierCurveTo(6,-11,8,-4,0,4);
     ctx.closePath(); ctx.fillStyle=GRUEN; ctx.fill(); ctx.restore();
   }
   function bullet(cx,cy){
-    ctx.save(); ctx.lineWidth=3; ctx.strokeStyle=GRUEN;
-    ctx.beginPath(); ctx.arc(cx,cy,26,0,Math.PI*2); ctx.stroke(); ctx.restore();
-    herz(cx,cy,20);
+    ctx.save(); ctx.lineWidth=3.5; ctx.strokeStyle=GRUEN;
+    ctx.beginPath(); ctx.arc(cx,cy,29,0,Math.PI*2); ctx.stroke(); ctx.restore();
+    herz(cx,cy,27);
   }
-  function pfeil(x,y,dir){ ctx.save(); ctx.strokeStyle=GRUEN; ctx.lineWidth=2; ctx.beginPath();
-    ctx.moveTo(x,y-4); ctx.lineTo(x+dir*6,y); ctx.lineTo(x,y+4); ctx.stroke(); ctx.restore(); }
+  function swash(y,s){ // s=+1 links, -1 rechts: geschwungene Ranke Richtung Mitte
+    ctx.beginPath();
+    ctx.moveTo(CX - s*105, y);
+    ctx.bezierCurveTo(CX - s*82, y-8, CX - s*60, y+8, CX - s*40, y-2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(CX - s*40, y-2);
+    ctx.quadraticCurveTo(CX - s*32, y-7, CX - s*24, y);
+    ctx.stroke();
+  }
   function divider(y){
-    ctx.save(); ctx.strokeStyle=GRUEN; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(CX-88,y); ctx.lineTo(CX-30,y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(CX+30,y); ctx.lineTo(CX+88,y); ctx.stroke(); ctx.restore();
-    pfeil(CX-24,y,1); pfeil(CX+24,y,-1); herz(CX,y,15);
+    ctx.save(); ctx.strokeStyle=GRUEN; ctx.lineWidth=2.2; ctx.lineJoin='round'; ctx.lineCap='round';
+    swash(y,1); swash(y,-1);
+    ctx.restore();
+    herz(CX,y,16);
   }
 
   ctx.fillStyle=GRUEN; ctx.textAlign='center';
 
-  // Titel (fix, zweizeilig) – passt sich der Spaltenbreite an
-  const tPx=fit('Wuchäend-', COLW, '700', 104, DANCING, 54);
+  // Titel (fix, zweizeilig), passt sich der Spaltenbreite an
+  const tPx=fit('Wuchäend-', COLW, '700', 100, DANCING, 52);
   let y = 70 + tPx*0.85;
   ctx.font='700 '+tPx+'px '+DANCING;
   ctx.fillText('Wuchäend-', CX, y);
   y += tPx*1.02;
   ctx.fillText('Menü', CX, y);
 
-  // Untertitel (jede Zeile passend verkleinert)
-  y += 58;
+  // Untertitel (mehr Abstand zum Titel)
+  y += 96;
   const uLines=untertitel.split('\n').map(s=>s.trim()).filter(Boolean);
-  uLines.forEach(l=>{ const px=fit(l, COLW, '500', 40, SERIF, 22); ctx.fillText(l, CX, y); y+=px+12; });
+  uLines.forEach(l=>{ const px=fit(l, COLW, '500', 38, SERIF, 20); ctx.fillText(l, CX, y); y+=px+12; });
 
-  // kleiner grüner Herz-Trenner
-  y += 6; herz(CX, y, 18); y += 34;
+  // grüner Herz-Trenner unter Untertitel
+  y += 8; herz(CX, y, 18); y += 40;
 
-  // Menü: Bullet + umbrechender Text + Trenner
-  const yTop=y, yBottom=1120;
+  // Menü: Bullet + umbrechender Text + ornamentaler Trenner
+  const yTop=y, yBottom=1115;
   const n=Math.max(1, gerichte.length);
   const slot=(yBottom-yTop)/n;
-  const textLX=150, menuMaxW=RX-textLX;
+  const bx=95, textLX=150, menuMaxW=RX-textLX;
   for(let i=0;i<n;i++){
     const cy=yTop+slot*(i+0.5);
-    bullet(105, cy);
-    const {px,lines}=wrapFit(gerichte[i]||'', menuMaxW, '700', 58, DANCING, 30);
+    bullet(bx, cy);
+    const {px,lines}=wrapFit(gerichte[i]||'', menuMaxW, '700', 56, DANCING, 28);
     const lh=px*1.05, total=lines.length*lh;
     ctx.fillStyle=GRUEN; ctx.textAlign='left'; ctx.font='700 '+px+'px '+DANCING;
     let by=cy-total/2+lh*0.78;
@@ -230,11 +277,11 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
     if(i<n-1) divider(yTop+slot*(i+1));
   }
 
-  // Grussformel unten (passend verkleinert)
+  // Grussformel unten
   let gy=1200;
   const gLines=gruss.split('\n').map(s=>s.trim()).filter(Boolean);
   ctx.fillStyle=GRUEN; ctx.textAlign='center';
-  gLines.forEach(l=>{ const px=fit(l, COLW, '600', 40, DANCING, 22); ctx.fillText(l, CX, gy); gy+=px+12; });
+  gLines.forEach(l=>{ const px=fit(l, COLW, '600', 38, DANCING, 20); ctx.fillText(l, CX, gy); gy+=px+12; });
   herz(CX, gy+2, 16);
 
   return cv;

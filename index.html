@@ -47,13 +47,15 @@
   textarea:focus{outline:none; border-color:var(--gruen-linie); box-shadow:0 0 0 3px rgba(60,112,66,.15);}
   textarea[readonly]{background:#f3eeddcc; color:#5a5747; border-style:dashed; cursor:default;}
   textarea[readonly]:focus{border-color:var(--rand); box-shadow:none;}
-  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px;}
+  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px; padding-right:6px;}
   .zeile textarea{flex:1}
   .zeile.zieht{opacity:.97; background:#fffef9; box-shadow:0 14px 30px rgba(47,93,52,.30); position:relative; z-index:5;}
   .zeile.platz{opacity:.35}
   .griff{flex:0 0 auto; width:52px; min-height:48px; display:flex; align-items:center; justify-content:center; background:#e7e5df; border:none; border-radius:13px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
   .griff svg{display:block}
   .griff:active{cursor:grabbing; background:#dcdad3}
+  .hinweis{font-size:13px; color:var(--grau); line-height:1.45; margin:14px 2px 0;}
+  .hinweis em{font-style:normal; color:var(--gruen-tief); font-weight:600;}
   .btn{border:none; border-radius:13px; padding:14px 18px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; transition:transform .05s, background .15s;}
   .btn:active{transform:translateY(1px)}
   .btn-gruen{background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; box-shadow:0 4px 12px rgba(47,93,52,.3)}
@@ -85,17 +87,11 @@
   <div class="karte">
     <h2><span class="schritt">1</span>Menü für dieses Wochenende</h2>
 
-    <label>Untertitel (Ort/Lokal)</label>
-    <textarea id="untertitel" readonly>i dä Schützenstube
-Liebburgtobel Bottighofen</textarea>
-
     <label>Gerichte (ein Gericht je Zeile)</label>
     <div id="gerichte"></div>
     <button class="btn btn-klein" id="add-gericht">+ Gericht hinzufügen</button>
 
-    <label style="margin-top:16px">Grussformel unten</label>
-    <textarea id="gruss" readonly>Freu mi uf euäs Bsüächli
-Grüässli Brigitte</textarea>
+    <p class="hinweis">Untertitel (<em>i dä Schützenstube · Liebburgtobel Bottighofen</em>) und Grussformel (<em>Freu mi uf euäs Bsüächli · Grüässli Brigitte</em>) sind fest hinterlegt und erscheinen automatisch auf dem Plakat.</p>
   </div>
 
   <div class="karte">
@@ -114,6 +110,9 @@ Grüässli Brigitte</textarea>
 <script>
 const $ = s => document.querySelector(s);
 const GRUEN = '#2f5d34';
+// Feste Texte fuers Plakat (nicht im Formular sichtbar, aber immer auf dem Plakat)
+const UNTERTITEL = 'i dä Schützenstube\nLiebburgtobel Bottighofen';
+const GRUSS = 'Freu mi uf euäs Bsüächli\nGrüässli Brigitte';
 function autoGrow(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
 document.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') autoGrow(e.target); });
 
@@ -161,7 +160,7 @@ function ziehbar(griff, zeile){
     const kleben = clientY => {
       zeile.style.transform = 'none';
       const top = zeile.getBoundingClientRect().top;
-      zeile.style.transform = 'translateY(' + (startTop + (clientY - startY) - top) + 'px) scale(1.03)';
+      zeile.style.transform = 'translateY(' + (startTop + (clientY - startY) - top) + 'px) scale(1.02)';
     };
     const move = ev => {
       ev.preventDefault();
@@ -336,7 +335,7 @@ async function erstellePlakat(){
     const bg = new Image();
     await new Promise((resolve, reject) => { bg.onload=resolve; bg.onerror=()=>reject(new Error('Hintergrundbild defekt.')); bg.src=daten.image; });
 
-    const cv = await baueCanvas(bg, $('#untertitel').value, gerichte, $('#gruss').value);
+    const cv = await baueCanvas(bg, UNTERTITEL, gerichte, GRUSS);
     letzterCanvas = cv;
     vorschau.src = cv.toDataURL('image/png'); vorschau.style.display='block';
     dlBereich.style.display='block';

@@ -152,6 +152,8 @@ function ziehbar(griff, zeile){
   griff.addEventListener('pointerdown', e => {
     e.preventDefault();
     zeile.classList.add('zieht');
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
     const move = ev => {
       ev.preventDefault();
       const nach = nachbarNach(ev.clientY);
@@ -160,6 +162,9 @@ function ziehbar(griff, zeile){
     };
     const ende = () => {
       zeile.classList.remove('zieht');
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      getSelection && getSelection().removeAllRanges();
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', ende);
       document.removeEventListener('pointercancel', ende);

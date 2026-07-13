@@ -51,8 +51,9 @@
   .zeile textarea{flex:1}
   .zeile.zieht{opacity:.9; background:#fffef9; box-shadow:0 10px 22px rgba(47,93,52,.22); position:relative; z-index:5;}
   .zeile.platz{opacity:.35}
-  .griff{flex:0 0 auto; width:44px; min-height:48px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:var(--gruen-tief); background:var(--gruen-hell); border:1px dashed #b9cdb6; border-radius:13px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
-  .griff:active{cursor:grabbing}
+  .griff{flex:0 0 auto; width:52px; min-height:48px; display:flex; align-items:center; justify-content:center; background:#e7e5df; border:none; border-radius:13px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
+  .griff svg{display:block}
+  .griff:active{cursor:grabbing; background:#dcdad3}
   .btn{border:none; border-radius:13px; padding:14px 18px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; transition:transform .05s, background .15s;}
   .btn:active{transform:translateY(1px)}
   .btn-gruen{background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; box-shadow:0 4px 12px rgba(47,93,52,.3)}
@@ -121,7 +122,8 @@ function neueZeile(wert=''){
   const div = document.createElement('div');
   div.className = 'zeile';
   const griff = document.createElement('div');
-  griff.className = 'griff'; griff.textContent = '⠇';
+  griff.className = 'griff';
+  griff.innerHTML = '<svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true"><g stroke="#222" stroke-width="2" stroke-linecap="round"><line x1="4" y1="4" x2="18" y2="4"/><line x1="4" y1="8" x2="18" y2="8"/><line x1="4" y1="12" x2="18" y2="12"/></g></svg>';
   griff.setAttribute('aria-label','Gedrückt halten und verschieben');
   griff.setAttribute('title','Gedrückt halten und verschieben');
   const ta = document.createElement('textarea');
@@ -129,7 +131,7 @@ function neueZeile(wert=''){
   const weg = document.createElement('button');
   weg.className = 'btn btn-weg'; weg.textContent = '×';
   weg.onclick = () => div.remove();
-  div.append(griff, ta, weg);
+  div.append(ta, griff, weg);
   gerichteBox.append(div);
   autoGrow(ta);
   ziehbar(griff, div);

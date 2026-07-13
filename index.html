@@ -286,4 +286,88 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
     bullet(bx, cy);
     const {px,lines}=wrapFit(gerichte[i]||'', menuMaxW, '700', 56, DANCING, 28);
     const lh=px*1.05, total=lines.length*lh;
-    ctx.fillStyle=GRUEN; ctx.textAlign='left'; ctx.font='
+    ctx.fillStyle=GRUEN; ctx.textAlign='left'; ctx.font='700 '+px+'px '+DANCING;
+    let by=cy-total/2+lh*0.78;
+    lines.forEach(l=>{ ctx.fillText(l, textLX, by); by+=lh; });
+    ctx.textAlign='center';
+    if(i<n-1) divider(yTop+slot*(i+1));
+  }
+
+  // Grussformel unten
+  let gy=1200;
+  const gLines=gruss.split('\n').map(s=>s.trim()).filter(Boolean);
+  ctx.fillStyle=GRUEN; ctx.textAlign='center';
+  gLines.forEach(l=>{ const px=fit(l, COLW, '600', 38, DANCING, 20); ctx.fillText(l, CX, gy); gy+=px+12; });
+  herz(CX, gy+2, 16);
+
+  return cv;
+}
+
+async function erstellePlakat(){
+  const status = $('#status');
+  const vorschau = $('#vorschau');
+  const dlBereich = $('#download-bereich');
+  const gerichte = [...gerichteBox.querySelectorAll('textarea')].map(t=>t.value.trim()).filter(Boolean);
+  if (!gerichte.length){ status.innerHTML = '<span class="fehler">Bitte mindestens ein Gericht eingeben.</span>'; return; }
+
+  $('#erstellen').disabled = true;
+  dlBereich.style.display = 'none'; vorschau.style.display = 'none';
+  status.innerHTML = '<span class="lade"><span class="spinner"></span>Plakat wird erstellt … das dauert etwa 15–40 Sekunden.</span>';
+
+  try {
+    // Schriften vorab laden (für Canvas)
+    await Promise.all([
+      document.fonts.load('700 104px "Dancing Script"'),
+      document.fonts.load('700 58px "Dancing Script"'),
+      document.fonts.load('600 40px "Dancing Script"'),
+      document.fonts.load('500 40px "Playfair Display"')
+    ]);
+    await document.fonts.ready;
+
+    const res = await fetch('/api/plakat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gerichte })
+    });
+    const daten = await res.json();
+    if (daten.error) throw new Error(daten.error);
+    if (!daten.image) throw new Error('Kein Bild erhalten.');
+
+    const bg = new Image();
+    await new Promise((resolve, reject) => { bg.onload=resolve; bg.onerror=()=>reject(new Error('Hintergrundbild defekt.')); bg.src=daten.image; });
+
+    const cv = await baueCanvas(bg, UNTERTITEL, gerichte, GRUSS);
+    letzterCanvas = cv;
+    vorschau.src = cv.toDataURL('image/png'); vorschau.style.display='block';
+    dlBereich.style.display='block';
+    status.innerHTML = '<span class="lade">✅ Fertig! Nicht zufrieden mit den Fotos? Einfach nochmal „Plakat erstellen" drücken.</span>';
+  } catch (e){
+    let tipp='';
+    if (/quota|billing|insufficient|exceeded/i.test(e.message)) tipp='\n\nTipp: OpenAI-Guthaben prüfen.';
+    else if (/timeout|timed out|502|504/i.test(e.message)) tipp='\n\nTipp: Zu lange gedauert – bitte nochmal versuchen.';
+    status.innerHTML = '<span class="fehler">Fehler: ' + e.message + tipp + '</span>';
+  } finally {
+    $('#erstellen').disabled = false;
+  }
+}
+$('#erstellen').addEventListener('click', erstellePlakat);
+
+$('#download').addEventListener('click', async () => {
+  if (!letzterCanvas) return;
+  const name = dateiName();
+  const blob = await new Promise(res => letzterCanvas.toBlob(res, 'image/png'));
+  try {
+    const file = new File([blob], name, { type:'image/png' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      await navigator.share({ files:[file], title:'Wuchäend-Menü' });
+      return;
+    }
+  } catch(e){ /* Abbruch/nicht unterstützt -> Fallback */ }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+});
+
+document.querySelectorAll('textarea').forEach(autoGrow);
+</script>
+</body>
+</html>

@@ -212,7 +212,7 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   const ctx=cv.getContext('2d');
   ctx.drawImage(bgImg,0,0,W,H);
 
-  const LX=64, RX=545;           // engere Spalte, Sicherheitsabstand zu den Fotos
+  const LX=92, RX=545;           // engere Spalte, Sicherheitsabstand zu den Fotos
   const CX=Math.round((LX+RX)/2);
   const COLW=RX-LX;
   const DANCING='"Dancing Script", cursive';
@@ -261,8 +261,8 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   ctx.fillStyle=GRUEN; ctx.textAlign='center';
 
   // Titel (fix, zweizeilig), passt sich der Spaltenbreite an
-  const tPx=fit('Wuchäend-', COLW, '700', 100, DANCING, 52);
-  let y = 70 + tPx*0.85;
+  const tPx=fit('Wuchäend-', COLW-16, '700', 104, DANCING, 52);
+  let y = 96 + tPx*0.85;
   ctx.font='700 '+tPx+'px '+DANCING;
   ctx.fillText('Wuchäend-', CX, y);
   y += tPx*1.02;
@@ -280,7 +280,7 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   const yTop=y, yBottom=1115;
   const n=Math.max(1, gerichte.length);
   const slot=(yBottom-yTop)/n;
-  const bx=95, textLX=150, menuMaxW=RX-textLX;
+  const bx=124, textLX=178, menuMaxW=RX-textLX;
   for(let i=0;i<n;i++){
     const cy=yTop+slot*(i+0.5);
     bullet(bx, cy);
@@ -298,7 +298,7 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   const gLines=gruss.split('\n').map(s=>s.trim()).filter(Boolean);
   ctx.fillStyle=GRUEN; ctx.textAlign='center';
   gLines.forEach(l=>{ const px=fit(l, COLW, '600', 38, DANCING, 20); ctx.fillText(l, CX, gy); gy+=px+12; });
-  herz(CX, gy+2, 16);
+  divider(gy+2);
 
   return cv;
 }

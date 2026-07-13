@@ -16,7 +16,7 @@ Beibehalten wie im Referenzbild:
 
 Rechte Bildhälfte: fotorealistische, appetitliche Essensfotos in rustikalen Keramikschalen – jeweils passend zu diesen Gerichten:
 ${gerichte.map((g, i) => `${i + 1}. ${g}`).join("\n")}
-Die Schalen von oben nach unten anordnen. ALLE Schalen/Teller MÜSSEN etwa GLEICH GROSS sein (einheitliche, mittlere Größe) und gleichmäßig verteilt – KEINE Schale darf deutlich größer sein als die anderen. Die Fotos bleiben in der rechten Bildhälfte.
+Serviere ALLE Speisen in gleich großen, runden Keramikschüsseln – auch Fleisch/Roastbeef gehört in eine solche Schüssel. KEINE großen flachen Teller oder Platten. Jede Schüssel muss exakt GLEICH GROSS und gleich breit sein wie die anderen (einheitliche, mittlere Größe), gleichmäßig von oben nach unten verteilt. Keine Speise darf größer wirken als die anderen. Alle Fotos bleiben in der rechten Bildhälfte.
 
 STRENG VERBOTEN (bitte unbedingt einhalten):
 - KEINE Buchstaben, Wörter, Zahlen oder Schrift – nirgends im Bild.
@@ -67,6 +67,4 @@ export default async (request) => {
   }
   if (!r.ok) return json({ error: (j && j.error && j.error.message) || ("HTTP " + r.status) });
   const b64 = j && j.data && j.data[0] && j.data[0].b64_json;
-  if (!b64) return json({ error: "Kein Bild erhalten." });
-  return json({ image: "data:image/png;base64," + b64 });
-};
+  if (!b64) return json({ error: "Kein Bild erhalten."

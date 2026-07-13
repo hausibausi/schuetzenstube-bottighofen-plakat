@@ -151,23 +151,22 @@ function nachbarNach(y){
 function ziehbar(griff, zeile){
   griff.addEventListener('pointerdown', e => {
     e.preventDefault();
-    griff.setPointerCapture(e.pointerId);
     zeile.classList.add('zieht');
     const move = ev => {
+      ev.preventDefault();
       const nach = nachbarNach(ev.clientY);
       if (nach == null) gerichteBox.appendChild(zeile);
-      else gerichteBox.insertBefore(zeile, nach);
+      else if (nach !== zeile) gerichteBox.insertBefore(zeile, nach);
     };
     const ende = () => {
       zeile.classList.remove('zieht');
-      try { griff.releasePointerCapture(e.pointerId); } catch(_){}
-      griff.removeEventListener('pointermove', move);
-      griff.removeEventListener('pointerup', ende);
-      griff.removeEventListener('pointercancel', ende);
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', ende);
+      document.removeEventListener('pointercancel', ende);
     };
-    griff.addEventListener('pointermove', move);
-    griff.addEventListener('pointerup', ende);
-    griff.addEventListener('pointercancel', ende);
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', ende);
+    document.addEventListener('pointercancel', ende);
   });
 }
 ['Suppe','Salat','Roastbeef','Sauce tartare & Sauce Hollandaise'].forEach(neueZeile);

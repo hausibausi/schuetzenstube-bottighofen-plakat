@@ -43,12 +43,12 @@
   .karte h2{font-size:17px; margin:0 0 14px; display:flex; align-items:center; color:var(--gruen-tief);}
   .schritt{display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; font-weight:700; font-size:15px; margin-right:10px; box-shadow:0 2px 6px rgba(47,93,52,.35);}
   label{display:block; font-weight:700; font-size:14.5px; margin:12px 0 5px; color:var(--gruen-tief)}
-  textarea{width:100%; padding:13px 14px; border:1.5px solid var(--rand); border-radius:12px; font-size:16px; font-family:inherit; background:#fffef9; color:var(--text); transition:border-color .15s, box-shadow .15s; resize:none; overflow:hidden; min-height:48px;}
+  textarea{width:100%; padding:10px 14px; border:1.5px solid var(--rand); border-radius:12px; font-size:16px; font-family:inherit; background:#fffef9; color:var(--text); transition:border-color .15s, box-shadow .15s; resize:none; overflow:hidden; min-height:42px;}
   textarea:focus{outline:none; border-color:var(--gruen-linie); box-shadow:0 0 0 3px rgba(60,112,66,.15);}
   textarea[readonly]{background:#f3eeddcc; color:#5a5747; border-style:dashed; cursor:default;}
   textarea[readonly]:focus{border-color:var(--rand); box-shadow:none;}
-  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px; padding-right:12px;}
-  .zeile textarea{flex:1}
+  .zeile{display:flex; gap:8px; align-items:center; margin-bottom:9px; background:transparent; border-radius:13px; padding-right:12px;}
+  .zeile textarea{flex:1; margin:4px 0}
   .zeile.zieht{opacity:.97; background:#fffef9; box-shadow:0 14px 30px rgba(47,93,52,.30); position:relative; z-index:5;}
   .zeile.platz{opacity:.35}
   .griff{flex:0 0 auto; width:40px; height:38px; align-self:center; display:flex; align-items:center; justify-content:center; background:#e7e5df; border:none; border-radius:11px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}

@@ -49,7 +49,7 @@
   textarea[readonly]:focus{border-color:var(--rand); box-shadow:none;}
   .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px;}
   .zeile textarea{flex:1}
-  .zeile.zieht{opacity:.9; background:#fffef9; box-shadow:0 10px 22px rgba(47,93,52,.22); position:relative; z-index:5;}
+  .zeile.zieht{opacity:.97; background:#fffef9; box-shadow:0 14px 30px rgba(47,93,52,.30); position:relative; z-index:5;}
   .zeile.platz{opacity:.35}
   .griff{flex:0 0 auto; width:52px; min-height:48px; display:flex; align-items:center; justify-content:center; background:#e7e5df; border:none; border-radius:13px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
   .griff svg{display:block}
@@ -151,17 +151,28 @@ function nachbarNach(y){
 function ziehbar(griff, zeile){
   griff.addEventListener('pointerdown', e => {
     e.preventDefault();
+    const startY = e.clientY;
+    zeile.style.transform = 'none';
+    const startTop = zeile.getBoundingClientRect().top;   // Ausgangsposition merken
     zeile.classList.add('zieht');
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
+    // Zeile am Cursor/Finger kleben lassen – auch nachdem sich die DOM-Position aendert
+    const kleben = clientY => {
+      zeile.style.transform = 'none';
+      const top = zeile.getBoundingClientRect().top;
+      zeile.style.transform = 'translateY(' + (startTop + (clientY - startY) - top) + 'px) scale(1.03)';
+    };
     const move = ev => {
       ev.preventDefault();
       const nach = nachbarNach(ev.clientY);
       if (nach == null) gerichteBox.appendChild(zeile);
       else if (nach !== zeile) gerichteBox.insertBefore(zeile, nach);
+      kleben(ev.clientY);
     };
     const ende = () => {
       zeile.classList.remove('zieht');
+      zeile.style.transform = '';
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
       getSelection && getSelection().removeAllRanges();

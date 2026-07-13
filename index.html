@@ -47,11 +47,11 @@
   textarea:focus{outline:none; border-color:var(--gruen-linie); box-shadow:0 0 0 3px rgba(60,112,66,.15);}
   textarea[readonly]{background:#f3eeddcc; color:#5a5747; border-style:dashed; cursor:default;}
   textarea[readonly]:focus{border-color:var(--rand); box-shadow:none;}
-  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px; padding-right:14px;}
+  .zeile{display:flex; gap:8px; align-items:stretch; margin-bottom:9px; background:transparent; border-radius:13px; padding-right:12px;}
   .zeile textarea{flex:1}
   .zeile.zieht{opacity:.97; background:#fffef9; box-shadow:0 14px 30px rgba(47,93,52,.30); position:relative; z-index:5;}
   .zeile.platz{opacity:.35}
-  .griff{flex:0 0 auto; width:52px; min-height:48px; display:flex; align-items:center; justify-content:center; background:#e7e5df; border:none; border-radius:13px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
+  .griff{flex:0 0 auto; width:40px; height:38px; align-self:center; display:flex; align-items:center; justify-content:center; background:#e7e5df; border:none; border-radius:11px; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
   .griff svg{display:block}
   .griff:active{cursor:grabbing; background:#dcdad3}
   .hinweis{font-size:13px; color:var(--grau); line-height:1.45; margin:14px 2px 0;}
@@ -60,7 +60,7 @@
   .btn:active{transform:translateY(1px)}
   .btn-gruen{background:linear-gradient(160deg,var(--gruen),var(--gruen-tief)); color:#fff; box-shadow:0 4px 12px rgba(47,93,52,.3)}
   .btn-klein{background:var(--gruen-hell); color:var(--gruen-tief); padding:12px 14px; font-size:15px; width:100%; border:1px dashed #b9cdb6}
-  .btn-weg{background:#f6e4e1; color:var(--rot); width:52px; min-height:48px; padding:0; font-size:22px; flex:0 0 auto}
+  .btn-weg{background:#f6e4e1; color:var(--rot); width:40px; height:38px; min-height:0; align-self:center; padding:0; font-size:19px; border-radius:11px; flex:0 0 auto}
   .btn-gross{width:100%; font-size:18px; padding:18px}
   .btn:disabled{opacity:.5; cursor:not-allowed}
   #vorschau-bereich{text-align:center}

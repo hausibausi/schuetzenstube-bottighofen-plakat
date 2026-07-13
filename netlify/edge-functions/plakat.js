@@ -1,25 +1,30 @@
-// Netlify Edge Function (Deno) – erzeugt NUR den dekorativen Hintergrund (ohne Text).
-// Der Menütext wird anschliessend im Browser als echter Text darübergelegt (garantiert korrekte Umlaute).
+// Netlify Edge Function (Deno) – ruft OpenAI serverseitig auf.
+// Wartezeit auf externe Aufrufe zaehlt NICHT ans Zeitlimit -> kein Timeout bei langsamer Bilderzeugung.
 const MODELL = "gpt-image-1.5";
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json; charset=utf-8" } });
 }
 
-function bauePrompt(gerichte) {
-  return `Erzeuge NUR eine leere, dekorative Plakat-Vorlage im rustikalen Landhaus-Stil — OHNE jeglichen Text, OHNE Buchstaben, OHNE Zahlen, OHNE Schriftzeichen irgendwo im Bild.
+function bauePrompt(untertitel, gerichte, gruss) {
+  return `Erzeuge NUR den grafischen HINTERGRUND für ein hochformatiges Restaurant-Plakat, im selben Stil wie das beigefügte Referenzbild. Der Text wird später digital eingesetzt – DU DARFST KEINEN TEXT ZEICHNEN.
 
-Bildaufbau (Hochformat 2:3):
-- Cremefarbener Pergament-/Papierhintergrund mit dezenter Textur.
-- Dünner dunkelgrüner Zierrahmen mit verspielten Ecken rundum.
-- Oben rechts ein rotes, handgezeichnetes Herz mit kleinen Strahlen (nur Zeichnung, kein Text).
-- Rechte Bildhälfte: appetitliche, fotorealistische Essensfotos in rustikalen hellen Keramikschalen, vertikal untereinander angeordnet, passend zu diesen Gerichten (nur die Speisen zeigen, KEINE Beschriftung): ${gerichte.join("; ")}.
-- Unten links, klein in der Ecke: Deko aus grün-kariertem Küchentuch, Holz-Pfeffermühle, Knoblauch, kleinem Schälchen mit Pfefferkörnern und frischen Kräutern.
+Beibehalten wie im Referenzbild:
+- Pergament-/Papier-Hintergrund in Creme, dünner grüner Zierrahmen mit verspielten Ecken.
+- Rotes, handgezeichnetes Herz mit kleinen Strahlen oben rechts.
+- Deko unten links: grün-kariertes Küchentuch, Holz-Pfeffermühle, Knoblauch, Schälchen mit Pfefferkörnern, frische Kräuter.
 
-GANZ WICHTIG:
-- Die gesamte LINKE Bildhälfte (mindestens 55% der Breite) bleibt komplett FREI — nur leeres, sauberes Pergament, keine Motive und keine Deko dort (außer der kleinen Ecke ganz unten links), damit dort später Text platziert werden kann.
-- ABSOLUT KEIN Text, keine Buchstaben, keine Wörter, keine Zahlen, keine Logos irgendwo im Bild.
-- Fotorealistisch, hochwertig, druckfertig, Hochformat.`;
+Rechte Bildhälfte: fotorealistische, appetitliche Essensfotos in rustikalen Keramikschalen – jeweils passend zu diesen Gerichten:
+${gerichte.map((g, i) => `${i + 1}. ${g}`).join("\n")}
+Die Schalen von oben nach unten anordnen. ALLE Schalen/Teller MÜSSEN etwa GLEICH GROSS sein (einheitliche, mittlere Größe) und gleichmäßig verteilt – KEINE Schale darf deutlich größer sein als die anderen. Die Fotos bleiben in der rechten Bildhälfte.
+
+STRENG VERBOTEN (bitte unbedingt einhalten):
+- KEINE Buchstaben, Wörter, Zahlen oder Schrift – nirgends im Bild.
+- KEINE Trennlinien, Striche, Pfeile, horizontalen Linien oder Zierlinien.
+- KEINE Herz-Aufzählungszeichen und keine Menü-Symbole.
+- Die LINKE Bildhälfte bleibt eine leere, ruhige Pergamentfläche (nur Rahmen; unten links die Deko) – dort kommt später der Text hin, daher unbedingt freihalten.
+
+Gleiches Hochformat (Seitenverhältnis) wie das Referenzbild. Sauberer, druckfertiger Hintergrund ohne jeden Text.`;
 }
 
 export default async (request) => {
@@ -29,9 +34,12 @@ export default async (request) => {
 
   let body;
   try { body = await request.json(); } catch { return json({ error: "Ungültige Anfrage." }); }
+  const untertitel = (body.untertitel || "").trim();
+  const gruss = (body.gruss || "").trim();
   const gerichte = Array.isArray(body.gerichte) ? body.gerichte.map((x) => String(x).trim()).filter(Boolean) : [];
   if (!gerichte.length) return json({ error: "Bitte mindestens ein Gericht angeben." });
 
+  // Referenzbild von der eigenen Seite laden
   let refBlob;
   try {
     const origin = new URL(request.url).origin;
@@ -44,7 +52,7 @@ export default async (request) => {
 
   const form = new FormData();
   form.append("model", MODELL);
-  form.append("prompt", bauePrompt(gerichte));
+  form.append("prompt", bauePrompt(untertitel, gerichte, gruss));
   form.append("size", "1024x1536");
   form.append("quality", "medium");
   form.append("n", "1");

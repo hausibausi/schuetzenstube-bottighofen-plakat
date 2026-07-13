@@ -276,15 +276,19 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   // grüner Trenner unter Untertitel – gleich wie zwischen den Menüs (Linien + Herz)
   y += 12; divider(y); y += 26;
 
-  // Menü: gleichmäßige feste Abstände, Trenner mittig zwischen den Gerichten
+  // Menü: variable Abstände – füllen den Platz je nach Anzahl der Gerichte gleichmäßig;
+  // nach JEDEM Gericht (auch dem letzten) ein Trenner (Herz mit Wellenlinien).
   const n=Math.max(1, gerichte.length);
   const bx=124, textLX=178, menuMaxW=RX-textLX;
-  const GAP=52;
+  const yBottomMenu=1125;
   const items = gerichte.map(g => {
     const {px,lines}=wrapFit(g||'', menuMaxW, '700', 54, DANCING, 28);
     const lh=px*1.05;
     return {px, lines, lh, h:lines.length*lh};
   });
+  const totalH = items.reduce((s,it)=>s+it.h,0);
+  let gap = (yBottomMenu - y - totalH) / n;   // n Lücken (nach jedem Gericht ein Trenner)
+  gap = Math.max(30, Math.min(140, gap));
   let cur = y;
   for(let i=0;i<n;i++){
     const it=items[i];
@@ -293,8 +297,9 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
     let by = cur + it.lh*0.78;
     it.lines.forEach(l=>{ ctx.fillText(l, textLX, by); by+=it.lh; });
     ctx.textAlign='center';
-    cur += it.h;
-    if(i<n-1){ cur += GAP/2; divider(cur); cur += GAP/2; }
+    cur += it.h + gap/2;
+    divider(cur);
+    cur += gap/2;
   }
 
   // Grussformel unten

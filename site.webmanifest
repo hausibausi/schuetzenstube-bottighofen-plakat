@@ -1,0 +1,18 @@
+{
+  "name": "Schützenstube Bottighofen · Wuchäend-Menü",
+  "short_name": "Wuchäend-Menü",
+  "description": "Plakatgenerator für das Wochenend-Menü der Schützenstube Bottighofen",
+  "lang": "de-CH",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6efdd",
+  "theme_color": "#2f5d34",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

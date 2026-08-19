@@ -1,0 +1,14 @@
+# Cloudflare Pages: Cache-Regeln
+# Die Seite selbst nie aus dem Cache ausliefern, damit Aenderungen sofort ankommen.
+/
+  Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/site.webmanifest
+  Cache-Control: no-cache, must-revalidate
+
+# Antworten der Bild-Funktion nie zwischenspeichern
+/api/*
+  Cache-Control: no-store

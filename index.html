@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2f5d34">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<script>
+// Frische Fassung erzwingen: beim ersten Aufruf einmalig mit ?v=… neu laden.
+// Der Parameter umgeht Browser- und Homescreen-Cache, danach ist er gesetzt und es passiert nichts mehr.
+(function(){
+  try{
+    var u = new URL(location.href);
+    if (!u.searchParams.has('v')){
+      u.searchParams.set('v', Date.now().toString(36));
+      location.replace(u.toString());
+    }
+  }catch(e){ /* ohne URL-Unterstuetzung einfach normal weiter */ }
+})();
+</script>
 <title>Schützenstube Bottighofen · Plakatgenerator</title>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -73,7 +87,13 @@
   .btn-gross{width:100%; font-size:18px; padding:18px}
   .btn:disabled{opacity:.5; cursor:not-allowed}
   #vorschau-bereich{text-align:center}
-  #vorschau{max-width:100%; border-radius:14px; border:1px solid var(--rand); margin-top:6px; display:none; box-shadow:var(--schatten)}
+  #vorschau{max-width:80%; border-radius:14px; border:1px solid var(--rand); margin-top:6px; display:none; box-shadow:var(--schatten)}
+  #nachbessern{display:none; text-align:left; margin-top:18px; padding-top:16px; border-top:1px dashed var(--rand);}
+  #nachbessern .hinweis{margin-top:6px}
+  #wunsch{min-height:64px}
+  .btn-hell{background:var(--gruen-hell); color:var(--gruen-tief); border:1.5px solid #b9cdb6}
+  .btn-icon{display:inline-flex; align-items:center; justify-content:center; gap:9px}
+  .btn-icon svg{display:block; flex:0 0 auto}
   #status{margin:14px 0 0; font-size:15px; min-height:22px}
   .lade{color:var(--gruen-tief); font-weight:700}
   .fehler{color:var(--rot); font-weight:700; white-space:pre-wrap; text-align:left}
@@ -109,8 +129,22 @@
     <div id="status"></div>
     <div id="vorschau-bereich">
       <img id="vorschau" alt="Plakat-Vorschau">
+
+      <div id="nachbessern">
+        <label for="wunsch">Fotos anpassen und nochmal erzeugen</label>
+        <textarea id="wunsch" rows="2" placeholder="z. B. die Siedwurst soll weiss und nicht braun sein, oder es soll ein Tomatensalat sein, oder es soll eine Kartoffelcreme-Suppe sein"></textarea>
+        <p class="hinweis">Der Menütext bleibt unverändert – es werden nur die Essensfotos neu erzeugt.</p>
+        <button class="btn btn-hell btn-gross btn-icon" id="neu" style="margin-top:12px">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3v5.5H15"/></svg>
+          Fotos neu erzeugen
+        </button>
+      </div>
+
       <div id="download-bereich" style="margin-top:12px; display:none">
-        <button class="btn btn-gruen btn-gross" id="download">⬇️ Speichern / Teilen</button>
+        <button class="btn btn-gruen btn-gross btn-icon" id="download">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"/><path d="m7.2 9.8 4.8 4.8 4.8-4.8"/><path d="M4.5 19.5h15"/></svg>
+          Speichern / Teilen
+        </button>
       </div>
     </div>
   </div>
@@ -328,7 +362,9 @@ async function erstellePlakat(){
   const gerichte = [...gerichteBox.querySelectorAll('textarea')].map(t=>t.value.trim()).filter(Boolean);
   if (!gerichte.length){ status.innerHTML = '<span class="fehler">Bitte mindestens ein Gericht eingeben.</span>'; return; }
 
-  $('#erstellen').disabled = true;
+  const wunsch = $('#wunsch').value.trim();
+
+  $('#erstellen').disabled = true; $('#neu').disabled = true;
   dlBereich.style.display = 'none'; vorschau.style.display = 'none';
   status.innerHTML = '<span class="lade"><span class="spinner"></span>Plakat wird erstellt … das dauert etwa 15–40 Sekunden.</span>';
 
@@ -344,7 +380,7 @@ async function erstellePlakat(){
 
     const res = await fetch('/api/plakat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gerichte })
+      body: JSON.stringify({ gerichte, wunsch })
     });
     const daten = await res.json();
     if (daten.error) throw new Error(daten.error);
@@ -357,17 +393,21 @@ async function erstellePlakat(){
     letzterCanvas = cv;
     vorschau.src = cv.toDataURL('image/png'); vorschau.style.display='block';
     dlBereich.style.display='block';
-    status.innerHTML = '<span class="lade">✅ Fertig! Nicht zufrieden mit den Fotos? Einfach nochmal „Plakat erstellen" drücken.</span>';
+    $('#nachbessern').style.display='block';
+    status.innerHTML = '';
+    // direkt zum fertigen Plakat springen
+    requestAnimationFrame(() => vorschau.scrollIntoView({ behavior:'smooth', block:'center' }));
   } catch (e){
     let tipp='';
     if (/quota|billing|insufficient|exceeded/i.test(e.message)) tipp='\n\nTipp: OpenAI-Guthaben prüfen.';
     else if (/timeout|timed out|502|504/i.test(e.message)) tipp='\n\nTipp: Zu lange gedauert – bitte nochmal versuchen.';
     status.innerHTML = '<span class="fehler">Fehler: ' + e.message + tipp + '</span>';
   } finally {
-    $('#erstellen').disabled = false;
+    $('#erstellen').disabled = false; $('#neu').disabled = false;
   }
 }
 $('#erstellen').addEventListener('click', erstellePlakat);
+$('#neu').addEventListener('click', erstellePlakat);
 
 $('#download').addEventListener('click', async () => {
   if (!letzterCanvas) return;

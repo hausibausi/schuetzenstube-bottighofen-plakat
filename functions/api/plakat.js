@@ -9,7 +9,10 @@ function json(obj, status = 200) {
   });
 }
 
-function bauePrompt(gerichte) {
+function bauePrompt(gerichte, wunsch) {
+  const zusatz = wunsch
+    ? `\nZUSÄTZLICHE WÜNSCHE der Wirtin zum Aussehen der Speisen – diese haben Vorrang vor der allgemeinen Beschreibung oben, betreffen aber ausschliesslich die Fotos:\n${wunsch}\n`
+    : "";
   return `Erzeuge NUR den grafischen HINTERGRUND für ein hochformatiges Restaurant-Plakat, im selben Stil wie das beigefügte Referenzbild. Der Text wird später digital eingesetzt – DU DARFST KEINEN TEXT ZEICHNEN.
 
 Beibehalten wie im Referenzbild:
@@ -20,7 +23,7 @@ Beibehalten wie im Referenzbild:
 Rechte Bildhälfte: fotorealistische, appetitliche Essensfotos in rustikalen Keramikschalen – jeweils passend zu diesen Gerichten:
 ${gerichte.map((g, i) => `${i + 1}. ${g}`).join("\n")}
 Serviere ALLE Speisen in gleich großen, runden Keramikschüsseln – auch Fleisch/Roastbeef gehört in eine solche Schüssel. KEINE großen flachen Teller oder Platten. Jede Schüssel muss exakt GLEICH GROSS und gleich breit sein wie die anderen (einheitliche, mittlere Größe), gleichmäßig von oben nach unten verteilt. Keine Speise darf größer wirken als die anderen. Alle Fotos bleiben in der rechten Bildhälfte.
-
+${zusatz}
 STRENG VERBOTEN (bitte unbedingt einhalten):
 - KEINE Buchstaben, Wörter, Zahlen oder Schrift – nirgends im Bild.
 - KEINE Trennlinien, Striche, Pfeile, horizontalen Linien oder Zierlinien.
@@ -41,6 +44,8 @@ export async function onRequestPost(context) {
     ? body.gerichte.map((x) => String(x).trim()).filter(Boolean)
     : [];
   if (!gerichte.length) return json({ error: "Bitte mindestens ein Gericht angeben." });
+  // Freitext der Wirtin: nur zur Beschreibung der Fotos, gekappt damit der Prompt nicht ausufert
+  const wunsch = String(body.wunsch || "").trim().slice(0, 600);
 
   // Referenzbild von der eigenen Seite laden
   let refBlob;
@@ -55,7 +60,7 @@ export async function onRequestPost(context) {
 
   const form = new FormData();
   form.append("model", MODELL);
-  form.append("prompt", bauePrompt(gerichte));
+  form.append("prompt", bauePrompt(gerichte, wunsch));
   form.append("size", "1024x1536");
   form.append("quality", "medium");
   form.append("n", "1");

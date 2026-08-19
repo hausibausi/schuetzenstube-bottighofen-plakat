@@ -87,10 +87,15 @@
   .btn-gross{width:100%; font-size:18px; padding:18px}
   .btn:disabled{opacity:.5; cursor:not-allowed}
   #vorschau-bereich{text-align:center}
-  #vorschau{max-width:80%; border-radius:14px; border:1px solid var(--rand); margin-top:6px; display:none; box-shadow:var(--schatten)}
+  #vorschau{max-width:68%; border-radius:14px; border:1px solid var(--rand); margin-top:6px; display:none; box-shadow:var(--schatten)}
   #nachbessern{display:none; text-align:left; margin-top:18px; padding-top:16px; border-top:1px dashed var(--rand);}
   #nachbessern .hinweis{margin-top:6px}
-  #wunsch{min-height:64px}
+  /* Feste Hoehe von vier Zeilen (rows="4"). Bei mehr Gerichten wird im Feld gescrollt,
+     statt dass es waechst und Plakat samt Knoepfen aus dem Bild schiebt. */
+  #wunsch{min-height:0; overflow-y:auto; resize:vertical}
+  #wunsch::placeholder{color:#a8a396; opacity:1}
+  .beispiel-hinweis{font-size:13px; color:var(--grau); margin:0 2px 6px; line-height:1.4}
+  .beispiel-hinweis em{font-style:normal; color:var(--gruen-tief); font-weight:700}
   .btn-hell{background:var(--gruen-hell); color:var(--gruen-tief); border:1.5px solid #b9cdb6}
   .btn-icon{display:inline-flex; align-items:center; justify-content:center; gap:9px}
   .btn-icon svg{display:block; flex:0 0 auto}
@@ -132,8 +137,10 @@
 
       <div id="nachbessern">
         <label for="wunsch">Fotos anpassen und nochmal erzeugen</label>
-        <textarea id="wunsch" rows="3" placeholder="Ein Wunsch je Zeile, und das Gericht dazuschreiben, z. B.:&#10;die Siedwurst soll weiss und nicht braun sein&#10;beim Salat Peperoni und mehr Zwiebeln&#10;über das Roastbeef noch Bratensauce träufeln"></textarea>
-        <p class="hinweis"><em>Je Zeile ein Wunsch</em>, und immer dazuschreiben, um welches Gericht es geht – dann wird auch jeder Wunsch umgesetzt. Der Menütext bleibt unverändert, es werden nur die Essensfotos neu erzeugt.</p>
+        <p class="beispiel-hinweis">Die grauen Zeilen im Feld sind <em>nur Beispiele</em> zur Orientierung – einfach eigene Wünsche hineinschreiben.</p>
+        <textarea id="wunsch" class="fest" rows="4" placeholder="Suppe: es soll eine Tomatensuppe sein&#10;Salat: bitte mit mehr Zwiebeln und Peperoni&#10;Roastbeef: mit Bratensauce&#10;Sauce tartare: mehr Schnittlauch darüber streuen"></textarea>
+        <p class="hinweis">Am besten je Zeile ein Gericht, davor den Namen und einen Doppelpunkt – so wie im Beispiel. Dann wird jeder Wunsch einzeln umgesetzt. Geändert werden ausschliesslich die Essensfotos; Design, Rahmen und alle Texte des Plakats bleiben immer gleich.</p>
+        <p class="hinweis" id="ignoriert" style="color:var(--rot)"></p>
         <button class="btn btn-hell btn-gross btn-icon" id="neu" style="margin-top:12px">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3v5.5H15"/></svg>
           Fotos neu erzeugen
@@ -157,7 +164,11 @@ const GRUEN = '#2f5d34';
 const UNTERTITEL = 'i dä Schützenstube\nLiebburgtobel Bottighofen';
 const GRUSS = 'Freu mi uf euäs Bsüächli\nGrüässli Brigitte';
 function autoGrow(el){ el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
-document.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') autoGrow(e.target); });
+// Felder mit der Klasse "fest" behalten ihre Hoehe und scrollen intern – sonst waechst das
+// Wunschfeld bei vielen Gerichten und schiebt Plakat und Knoepfe aus dem Bild.
+document.addEventListener('input', e => {
+  if (e.target.tagName === 'TEXTAREA' && !e.target.classList.contains('fest')) autoGrow(e.target);
+});
 
 const gerichteBox = $('#gerichte');
 function neueZeile(wert=''){
@@ -355,6 +366,36 @@ async function baueCanvas(bgImg, untertitel, gerichte, gruss){
   return cv;
 }
 
+/*
+  Bildausschnitt nach dem Erzeugen setzen.
+  Nicht das Plakat allein mittig stellen – dann liegen Anpassfeld und Knoepfe unterhalb des
+  Schirms und man sieht nur das Bild (gemeldet 2026-08-19). Stattdessen den ganzen Block
+  aus Plakat und Bedienelementen betrachten: passt er ganz auf den Schirm, wird er mittig
+  gesetzt; sonst kommt seine Oberkante nach oben – dann ist das Plakat vollstaendig zu sehen
+  und darunter beginnt sichtbar das Anpassfeld.
+*/
+function zeigePlakat(){
+  const kasten = $('#vorschau-bereich').getBoundingClientRect();
+  const sicht = window.innerHeight;
+  const rand = 14;
+  const oben = kasten.top + window.scrollY;
+  const ziel = Math.max(0, kasten.height <= sicht - 2*rand
+    ? oben - (sicht - kasten.height)/2
+    : oben - rand);
+
+  const start = window.scrollY;
+  try { window.scrollTo({ top: ziel, behavior:'smooth' }); }
+  catch(e){ window.scrollTo(0, ziel); return; }   // sehr alte Browser kennen das Objekt nicht
+
+  // Sicherheitsnetz: gemessen 2026-08-19 auf Android ignorieren manche Browser 'smooth'
+  // vollstaendig – dann passiert gar nichts und man sieht das fertige Plakat nie.
+  // Nur eingreifen, wenn sich ueberhaupt nichts bewegt hat; eine laufende Animation
+  // wuerde sonst mittendrin abgehackt.
+  setTimeout(() => {
+    if (window.scrollY === start && Math.abs(ziel - start) > 4) window.scrollTo(0, ziel);
+  }, 300);
+}
+
 async function erstellePlakat(){
   const status = $('#status');
   const vorschau = $('#vorschau');
@@ -394,9 +435,21 @@ async function erstellePlakat(){
     vorschau.src = cv.toDataURL('image/png'); vorschau.style.display='block';
     dlBereich.style.display='block';
     $('#nachbessern').style.display='block';
+    // Zeilen, die nicht die Speisen betreffen, wurden serverseitig aussortiert – das sagen wir auch
+    const weg = Array.isArray(daten.ignoriert) ? daten.ignoriert : [];
+    $('#ignoriert').innerHTML = weg.length
+      ? 'Nicht verwendet, weil es nicht die Speisen betrifft: <em>' +
+        weg.map(t => t.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))).join('</em> · <em>') +
+        '</em><br>Design, Rahmen und alle Texte des Plakats bleiben immer gleich.'
+      : '';
     status.innerHTML = '';
-    // direkt zum fertigen Plakat springen
-    requestAnimationFrame(() => vorschau.scrollIntoView({ behavior:'smooth', block:'center' }));
+    // Erst wenn das Bild wirklich steht, kennt der Browser seine Hoehe – vorher waere
+    // jede Rechnerei fuer den Bildausschnitt daneben.
+    await new Promise(f => {
+      if (vorschau.complete && vorschau.naturalHeight) f();
+      else { vorschau.onload = f; vorschau.onerror = f; }
+    });
+    zeigePlakat();
   } catch (e){
     let tipp='';
     if (/quota|billing|insufficient|exceeded/i.test(e.message)) tipp='\n\nTipp: OpenAI-Guthaben prüfen.';
@@ -425,7 +478,7 @@ $('#download').addEventListener('click', async () => {
   setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
 });
 
-document.querySelectorAll('textarea').forEach(autoGrow);
+document.querySelectorAll('textarea:not(.fest)').forEach(autoGrow);
 </script>
 </body>
 </html>

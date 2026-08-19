@@ -34,13 +34,38 @@ function nennt(wunsch, gericht) {
     .some((t) => w.includes(t));
 }
 
-function bauePrompt(gerichte, wunsch) {
-  const wuensche = wunsch ? teileWuensche(wunsch) : [];
+// Wuensche, die nicht die Speisen betreffen, sondern Schrift oder das feste Design.
+// Die duerfen den Prompt gar nicht erst erreichen: Text im Bild zerstoert das Plakat
+// (der echte Text kommt per Canvas darueber), und das Design soll unveraendert bleiben.
+const TABU = [
+  "text", "schrift", "buchstab", "beschrift", "schreib", "wort", "worter",
+  "titel", "uberschrift", "zahl", "ziffer", "logo",
+  "rahmen", "hintergrund", "pergament", "layout",
+];
+function betrifftDesign(wunsch) {
+  const w = normal(wunsch);
+  return TABU.some((t) => w.includes(t));
+}
 
-  // Wunsch, der genau EIN Gericht nennt, wandert direkt hinter dieses Gericht.
-  // Bei mehreren genannten Gerichten waere die Zuordnung geraten – dann bleibt er nur in der Liste.
+function bauePrompt(gerichte, roheWuensche) {
+  // "Suppe:" ohne Inhalt ist kein Wunsch. Ungefiltert landete der Fetzen sowohl an der
+  // Gerichtezeile als auch in der Checkliste und verwaesserte den Prompt. (2026-08-19)
+  const wuensche = (roheWuensche || []).filter((w) => !/^[^:]{1,40}:\s*$/.test(w));
+
+  // Wunsch dem Gericht zuordnen. Zwei Wege, der erste hat Vorrang:
+  // 1. Schreibweise "Roastbeef: mit Bratensauce" – der Teil vor dem Doppelpunkt ist das Gericht.
+  //    Das ist eindeutig, auch wenn im Wunsch selbst weitere Gerichte vorkommen.
+  // 2. Sonst Stichwortsuche im ganzen Satz. Nennt der Wunsch mehrere Gerichte, waere die
+  //    Zuordnung geraten – dann bleibt er nur in der Checkliste.
   const anhang = gerichte.map(() => []);
   for (const w of wuensche) {
+    const dp = w.indexOf(":");
+    if (dp > 0 && dp <= 40) {
+      const kopf = w.slice(0, dp);
+      const rest = w.slice(dp + 1).trim();
+      const nachKopf = gerichte.map((g, i) => (nennt(kopf, g) ? i : -1)).filter((i) => i >= 0);
+      if (nachKopf.length === 1 && rest) { anhang[nachKopf[0]].push(rest); continue; }
+    }
     const treffer = gerichte.map((g, i) => (nennt(w, g) ? i : -1)).filter((i) => i >= 0);
     if (treffer.length === 1) anhang[treffer[0]].push(w);
   }
@@ -51,12 +76,14 @@ function bauePrompt(gerichte, wunsch) {
   const checkliste = wuensche.length
     ? `\nÄNDERUNGSWÜNSCHE der Wirtin – es müssen ALLE Punkte umgesetzt werden, nicht nur einer:
 ${wuensche.map((w, i) => `${i + 1}. ${w}`).join("\n")}
-Gehe die Punkte vor der Ausgabe einzeln durch und prüfe jeden. Sie haben Vorrang vor der allgemeinen Beschreibung oben und betreffen ausschliesslich die Essensfotos.\n`
+Gehe die Punkte vor der Ausgabe einzeln durch und prüfe jeden.
+GELTUNGSBEREICH: Diese Wünsche verändern AUSSCHLIESSLICH die Speisen in den Schüsseln der rechten Bildhälfte – also Zutaten, Farbe, Garstufe, Beilagen, Saucen. Alles andere bleibt exakt wie im Referenzbild: Papier, Zierrahmen, rotes Herz, Deko unten links, Bildaufteilung. Sollte ein Wunsch etwas anderes verlangen als das Aussehen der Speisen, dann setze ihn NICHT um und lass das Bild in diesem Punkt unverändert.\n`
     : "";
 
   // Zum Schluss nochmal kurz – was am Ende des Prompts steht, wird am ehesten befolgt.
+  // Die Schutzregel steht dabei bewusst NACH den Wuenschen, damit sie das letzte Wort behaelt.
   const erinnerung = wuensche.length
-    ? `\nNochmals zur Kontrolle, ALLE diese Änderungen müssen im Bild sichtbar sein: ${wuensche.map((w, i) => `${i + 1}) ${w}`).join(" ")}`
+    ? `\nNochmals zur Kontrolle: ALLE diese Änderungen an den SPEISEN müssen sichtbar sein – ${wuensche.map((w, i) => `${i + 1}) ${w}`).join(" ")} – und trotzdem bleiben Papier, Zierrahmen, Herz, Deko und die leere linke Bildhälfte unverändert, und es steht weiterhin KEIN Text im Bild.`
     : "";
   return `Erzeuge NUR den grafischen HINTERGRUND für ein hochformatiges Restaurant-Plakat, im selben Stil wie das beigefügte Referenzbild. Der Text wird später digital eingesetzt – DU DARFST KEINEN TEXT ZEICHNEN.
 
@@ -90,7 +117,9 @@ export async function onRequestPost(context) {
     : [];
   if (!gerichte.length) return json({ error: "Bitte mindestens ein Gericht angeben." });
   // Freitext der Wirtin: nur zur Beschreibung der Fotos, gekappt damit der Prompt nicht ausufert
-  const wunsch = String(body.wunsch || "").trim().slice(0, 600);
+  const roh = teileWuensche(String(body.wunsch || "").trim().slice(0, 600));
+  const wuensche = roh.filter((w) => !betrifftDesign(w));
+  const ignoriert = roh.filter(betrifftDesign);
 
   // Referenzbild von der eigenen Seite laden
   let refBlob;
@@ -105,7 +134,7 @@ export async function onRequestPost(context) {
 
   const form = new FormData();
   form.append("model", MODELL);
-  form.append("prompt", bauePrompt(gerichte, wunsch));
+  form.append("prompt", bauePrompt(gerichte, wuensche));
   form.append("size", "1024x1536");
   form.append("quality", "medium");
   form.append("n", "1");
@@ -125,5 +154,5 @@ export async function onRequestPost(context) {
   if (!r.ok) return json({ error: (j && j.error && j.error.message) || ("HTTP " + r.status) });
   const b64 = j && j.data && j.data[0] && j.data[0].b64_json;
   if (!b64) return json({ error: "Kein Bild erhalten." });
-  return json({ image: "data:image/png;base64," + b64 });
+  return json({ image: "data:image/png;base64," + b64, ignoriert });
 }

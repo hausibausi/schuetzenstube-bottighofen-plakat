@@ -5,7 +5,12 @@ const MODELL = "gpt-image-1.5";
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      // _headers greift nur auf statische Dateien, nicht auf Funktions-Antworten – deshalb
+      // hier direkt gesetzt: die Bildantwort soll nie zwischengespeichert werden.
+      "cache-control": "no-store",
+    },
   });
 }
 

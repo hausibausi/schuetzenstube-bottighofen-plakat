@@ -9,6 +9,10 @@
 /site.webmanifest
   Cache-Control: no-cache, must-revalidate
 
-# Antworten der Bild-Funktion nie zwischenspeichern
+# HINWEIS: _headers wirkt bei Cloudflare Pages nur auf statische Dateien, NICHT auf
+# Antworten von Pages Functions. Fuer /api/plakat ist der no-store-Header deshalb
+# direkt in functions/api/plakat.js gesetzt (Funktion json()), nicht hier. Der
+# Eintrag unten ist wirkungslos und bleibt nur als Hinweis stehen, damit die
+# Absicht nicht verlorengeht, falls Cloudflare das Verhalten einmal aendert.
 /api/*
   Cache-Control: no-store

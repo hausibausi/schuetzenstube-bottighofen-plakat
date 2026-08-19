@@ -9,9 +9,54 @@ function json(obj, status = 200) {
   });
 }
 
+// Umlaute weg, damit "Grüässli"/"Suppe" auch bei Tippfehlern vergleichbar bleiben
+function normal(s) {
+  return String(s).toLowerCase()
+    .replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss");
+}
+
+// Fliesstext in einzelne Wuensche zerlegen: eine Zeile oder ein Satz = ein Wunsch.
+// Ein Bild-Modell setzt kurze Einzelanweisungen deutlich zuverlaessiger um als einen Sammelsatz.
+function teileWuensche(text) {
+  return String(text)
+    .split(/\r?\n|(?<=[.;!?])\s+/)
+    .map((s) => s.replace(/^[-*•\d.)\s]+/, "").trim())
+    .filter((s) => s.length > 2);
+}
+
+// Welche Gerichte nennt ein Wunsch? Kurze Fuellwoerter zaehlen nicht.
+const FUELLWORT = new Set(["und", "oder", "mit", "ohne", "vom", "der", "die", "das", "dem", "den", "ein", "eine", "sauce"]);
+function nennt(wunsch, gericht) {
+  const w = normal(wunsch);
+  return normal(gericht)
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4 && !FUELLWORT.has(t))
+    .some((t) => w.includes(t));
+}
+
 function bauePrompt(gerichte, wunsch) {
-  const zusatz = wunsch
-    ? `\nZUSÄTZLICHE WÜNSCHE der Wirtin zum Aussehen der Speisen – diese haben Vorrang vor der allgemeinen Beschreibung oben, betreffen aber ausschliesslich die Fotos:\n${wunsch}\n`
+  const wuensche = wunsch ? teileWuensche(wunsch) : [];
+
+  // Wunsch, der genau EIN Gericht nennt, wandert direkt hinter dieses Gericht.
+  // Bei mehreren genannten Gerichten waere die Zuordnung geraten – dann bleibt er nur in der Liste.
+  const anhang = gerichte.map(() => []);
+  for (const w of wuensche) {
+    const treffer = gerichte.map((g, i) => (nennt(w, g) ? i : -1)).filter((i) => i >= 0);
+    if (treffer.length === 1) anhang[treffer[0]].push(w);
+  }
+  const liste = gerichte
+    .map((g, i) => `${i + 1}. ${g}${anhang[i].length ? ` — SO ABÄNDERN: ${anhang[i].join(" ")}` : ""}`)
+    .join("\n");
+
+  const checkliste = wuensche.length
+    ? `\nÄNDERUNGSWÜNSCHE der Wirtin – es müssen ALLE Punkte umgesetzt werden, nicht nur einer:
+${wuensche.map((w, i) => `${i + 1}. ${w}`).join("\n")}
+Gehe die Punkte vor der Ausgabe einzeln durch und prüfe jeden. Sie haben Vorrang vor der allgemeinen Beschreibung oben und betreffen ausschliesslich die Essensfotos.\n`
+    : "";
+
+  // Zum Schluss nochmal kurz – was am Ende des Prompts steht, wird am ehesten befolgt.
+  const erinnerung = wuensche.length
+    ? `\nNochmals zur Kontrolle, ALLE diese Änderungen müssen im Bild sichtbar sein: ${wuensche.map((w, i) => `${i + 1}) ${w}`).join(" ")}`
     : "";
   return `Erzeuge NUR den grafischen HINTERGRUND für ein hochformatiges Restaurant-Plakat, im selben Stil wie das beigefügte Referenzbild. Der Text wird später digital eingesetzt – DU DARFST KEINEN TEXT ZEICHNEN.
 
@@ -21,16 +66,16 @@ Beibehalten wie im Referenzbild:
 - Deko unten links: grün-kariertes Küchentuch, Holz-Pfeffermühle, Knoblauch, Schälchen mit Pfefferkörnern, frische Kräuter.
 
 Rechte Bildhälfte: fotorealistische, appetitliche Essensfotos in rustikalen Keramikschalen – jeweils passend zu diesen Gerichten:
-${gerichte.map((g, i) => `${i + 1}. ${g}`).join("\n")}
+${liste}
 Serviere ALLE Speisen in gleich großen, runden Keramikschüsseln – auch Fleisch/Roastbeef gehört in eine solche Schüssel. KEINE großen flachen Teller oder Platten. Jede Schüssel muss exakt GLEICH GROSS und gleich breit sein wie die anderen (einheitliche, mittlere Größe), gleichmäßig von oben nach unten verteilt. Keine Speise darf größer wirken als die anderen. Alle Fotos bleiben in der rechten Bildhälfte.
-${zusatz}
+${checkliste}
 STRENG VERBOTEN (bitte unbedingt einhalten):
 - KEINE Buchstaben, Wörter, Zahlen oder Schrift – nirgends im Bild.
 - KEINE Trennlinien, Striche, Pfeile, horizontalen Linien oder Zierlinien.
 - KEINE Herz-Aufzählungszeichen und keine Menü-Symbole.
 - Die LINKE Bildhälfte bleibt eine leere, ruhige Pergamentfläche (nur Rahmen; unten links die Deko) – dort kommt später der Text hin, daher unbedingt freihalten.
 
-Gleiches Hochformat (Seitenverhältnis) wie das Referenzbild. Sauberer, druckfertiger Hintergrund ohne jeden Text.`;
+Gleiches Hochformat (Seitenverhältnis) wie das Referenzbild. Sauberer, druckfertiger Hintergrund ohne jeden Text.${erinnerung}`;
 }
 
 export async function onRequestPost(context) {
